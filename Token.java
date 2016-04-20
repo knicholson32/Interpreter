@@ -4,10 +4,10 @@ public class Token{
   public Type type;
 
   // the value of the Token
-  public char value;
+  public String value;
 
   // Token Constructor that takes a type and a clar
-  public Token(Type type, char value){
+  public Token(Type type, String value){
     this.type = type;
     this.value = value;
   }

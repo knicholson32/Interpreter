@@ -4,155 +4,135 @@
  *  Operators: +, -
  */
 
+// -------------------------------Grammer------------------------------- //
+// expr:    term[(PLUS|MINUS) term]*
+// term:    exp[(MULT|DIV|MOD) exp]*
+// exp:     factor(EXP factor)*
+// factor:  [(MINUS|PLUS) factor] | INTEGER | LPAR expr RPAR
+// --------------------------------------------------------------------- //
+
 public class Interpreter {
 
   // Main method that creates an Interpreter and populates it with args[0]
   public static void main(String[] args) {
+
+
     // Create new Interpreter and pass the first argument from the command line
-    Interpreter i = new Interpreter(args[0]);
+    Interpreter i = new Interpreter(new Lexer(args[0]));
     // run the interpret method and print the result
-    System.out.println(i.interpret());
+    System.out.println(args[0] + " = " + i.expr());
   }
 
   // -----------------------------Methods Start----------------------------- //
 
-  // text contains the initial argument that is passed in the constructor
-  private String text;
 
-  // pos repersents the index within the String text that is beening interpreted
-  private int pos;
-
-  // The current token that the interpreter is working with
+  private Lexer lexer;
   private Token currentToken;
 
-
   // Constructor for Interpreter which takes a string (the arguments)
-  public Interpreter(String text){
-    // set the initial arguemnt variable
-    this.text = text;
-
-    // set the initial index to 0
-    this.pos = 0;
-
-    // set the initial current Token to null (none have been created)
-    this.currentToken = null;
+  public Interpreter(Lexer lexer){
+    this.lexer = lexer;
+    currentToken = lexer.getNextToken();
   }
 
-  // To be run in the event of an error. Takes a string as an error message
   public void error(String msg){
-    System.out.println("Error parsing input: " + msg);
+    System.out.println("Interpreter: Error parsing input: " + msg);
     System.exit(1);
   }
 
-  // Reads text starting at the current pos (index) and deturmines the type of
-  // token to produce. It then incriments the pos (index) and returns a Token
-  public Token getNextToken(){
-    // If the entire text has already been tokenized, return the EOF token
-    if(this.pos > text.length() - 1){
-      return new Token(Type.EOF, '\n');
+  private void eat(Type t){
+    if(currentToken.type == t){
+      currentToken = lexer.getNextToken();
+      //System.out.println(currentToken.type);
+    }else
+      error("Invalid Varification: Looking for " + t +" but found " + currentToken.type);
+  }
+
+  public int expr(){
+    int result = term();
+    //System.out.println(result);
+    while(currentToken.type == Type.PLUS || currentToken.type == Type.MINUS){
+      Token token = currentToken;
+      if(token.type == Type.PLUS){
+        eat(Type.PLUS);
+        result = result + term();
+      }else if(token.type == Type.MINUS){
+        eat(Type.MINUS);
+        result = result - term();
+      }else{
+        error("Unexpected Character");
+      }
     }
-
-    // Get the char at pos and incriment pos (for next time)
-    char currentChar = text.charAt(pos);
-    this.pos++;
-
-    //System.out.println("Char: " + currentChar + " " + (currentChar==' '));
-
-
-    // ------------------------Token Interpretation------------------------- //
-
-    Type type = null;
-    // If the current charactor is a space, skip over it
-    if(currentChar == ' ')
-      return getNextToken();
-
-    // If the charactor is a digit, return an integer token with that value
-    else if(Character.isDigit(currentChar))
-      return new Token(Type.INTEGER, currentChar);
-
-    // If the charactor is a plus, retuen a plus token.
-    else if(currentChar == '+')
-        return new Token(Type.PLUS, currentChar);
-
-    // If the charactor is a minus, return a minus token.
-    else if(currentChar == '-')
-        return new Token(Type.MINUS, currentChar);
-    else if(currentChar == '*')
-        return new Token(Type.MULT, currentChar);
-    else if(currentChar == '/')
-        return new Token(Type.DIVIDE, currentChar);
-
-    // If none of the above return, return an error.
-    error("Invalid Character");
-    return null;
+    return result;
   }
 
-  // Checks if the curent Token matches the given type. Returns true on success
-  public boolean check(Type tokenType){
-    //System.out.println("Check: " + currentToken.type + "  vs  " + tokenType);
-    return currentToken.type == tokenType;
-  }
-
-  // returns an error of the current Token does not match the given type
-  public void validate(Type tokenType){
-    if(currentToken.type!=tokenType)
-      error("Validate");
-  }
-
-  // Returns the integer value of the current token.
-  public int grabInteger(){
-    // check that the current token is an integer
-    validate(Type.INTEGER);
-
-    // Collect all of the integers in a sequence to make a number.
-    // EG. '1' '2' '3' ==> 123
-    int output = 0;
-    do{
-      output = 10*output + Character.getNumericValue(currentToken.value);
-      this.currentToken = getNextToken();
-    }while(check(Type.INTEGER));
-    return output;
-  }
-
-  public boolean isOpperator(Token t){
-    return (t.type == Type.PLUS || t.type == Type.MINUS || t.type == Type.MULT || t.type == Type.DIVIDE);
-  }
-
-
-  // Function that interprets the text (Argument)
-  // This can only work with one operator based on the following format:
-  //  "<int> <operator> <int>"
-  public int interpret() {
-    // Get the next token within the text and set it to currentToken
-    currentToken = getNextToken();
-
-    // find the first integer
-    int firstNum = grabInteger();
-
-    // Deturmine the operator type
-    Token op = currentToken;
-    if(!isOpperator(op)){
-      error("Opperator - Ver");
-    }else{
-      this.currentToken = getNextToken();
+  public int term(){
+    //System.out.println(currentToken);
+    int result = exp();
+    while(currentToken.type == Type.MULT || currentToken.type == Type.DIVIDE || currentToken.type == Type.MOD){
+      Token token = currentToken;
+      //System.out.println(currentToken);
+      if(token.type == Type.MULT){
+        eat(Type.MULT);
+        //System.out.println(currentToken);
+        result = result * exp();
+      }else if(token.type == Type.DIVIDE){
+        eat(Type.DIVIDE);
+        //System.out.println(currentToken);
+        result = result / exp();
+      }else if(token.type == Type.MOD){
+        eat(Type.MOD);
+        //System.out.println(currentToken);
+        result = result % exp();
+      }else{
+        error("Unexpected Character");
+      }
     }
+    return result;
+  }
 
-    // find the last integer
-    int lastNum = grabInteger();
+  public int exp(){
+    int result = factor();
+    //System.out.println(result);
+    while(currentToken.type == Type.EXP){
+      Token token = currentToken;
+      if(token.type == Type.EXP){
+        eat(Type.EXP);
+        result = (int)Math.pow(result,factor());
+      }else{
+        error("Unexpected Character");
+      }
+    }
+    return result;
+  }
 
-    //System.out.println("First: " + firstNum + "\tLast: " + lastNum);
-    switch(op.type){
-      case PLUS:
-        return firstNum + lastNum;
-      case MINUS:
-        return firstNum - lastNum;
-      case MULT:
-        return firstNum * lastNum;
-      case DIVIDE:
-        return firstNum / lastNum;
-      default:
-        error("Opperator");
+  private int factor(){
+    Token token = currentToken;
+
+    if(token.type == Type.MINUS){
+      currentToken = lexer.getNextToken();
+      return -factor();
+    }else if(token.type== Type.PLUS){
+      currentToken = lexer.getNextToken();
+      return factor();
+    }else if(token.type==Type.INTEGER){
+      eat(Type.INTEGER);
+      try{
+        return Integer.parseInt(token.value);
+      }catch(Exception e){
+        error("Integer Error");
         return 0;
+      }
+    }else if(token.type == Type.LPAR){
+      eat(Type.LPAR);
+      int result = 0;
+      result = expr();
+      eat(Type.RPAR);
+      return result;
+    }else{
+      error("Factor Error");
+      return 0;
     }
   }
+
 }
