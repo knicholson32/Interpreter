@@ -40,13 +40,17 @@ public class Interpreter {
         return new Token(Type.PLUS, currentChar);
     else if(currentChar == '-')
         return new Token(Type.MINUS, currentChar);
+    else if(currentChar == '*')
+        return new Token(Type.MULT, currentChar);
+    else if(currentChar == '/')
+        return new Token(Type.DIVIDE, currentChar);
 
     error("Invalid Character");
     return null;
   }
 
   public boolean check(Type tokenType){
-    System.out.println("Check: " + currentToken.type + "  vs  " + tokenType);
+    //System.out.println("Check: " + currentToken.type + "  vs  " + tokenType);
     return currentToken.type == tokenType;
   }
 
@@ -65,6 +69,10 @@ public class Interpreter {
     return output;
   }
 
+  public boolean isOpperator(Token t){
+    return (t.type == Type.PLUS || t.type == Type.MINUS || t.type == Type.MULT || t.type == Type.DIVIDE);
+  }
+
 
   public int interpret() {
     currentToken = getNextToken();
@@ -76,8 +84,8 @@ public class Interpreter {
 
 
     Token op = currentToken;
-    if(!check(Type.PLUS) && !check(Type.MINUS)){
-      error("Opperator");
+    if(!isOpperator(op)){
+      error("Opperator - Ver");
     }else{
       this.currentToken = getNextToken();
     }
@@ -86,7 +94,18 @@ public class Interpreter {
     int lastNum = grabInteger();
 
     //System.out.println("First: " + firstNum + "\tLast: " + lastNum);
-
-    return (op.type==Type.PLUS?firstNum + lastNum:firstNum-lastNum);
+    switch(op.type){
+      case PLUS:
+        return firstNum + lastNum;
+      case MINUS:
+        return firstNum - lastNum;
+      case MULT:
+        return firstNum * lastNum;
+      case DIVIDE:
+        return firstNum / lastNum;
+      default:
+        error("Opperator");
+        return 0;
+    }
   }
 }
