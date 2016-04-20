@@ -13,8 +13,8 @@ public class Interpreter {
     this.currentToken = null;
   }
 
-  public void error(){
-    System.out.println("Error parsing input");
+  public void error(String msg){
+    System.out.println("Error parsing input: " + msg);
     System.exit(1);
   }
 
@@ -25,37 +25,68 @@ public class Interpreter {
     char currentChar = text.charAt(pos);
     this.pos++;
 
+    //System.out.println("Char: " + currentChar + " " + (currentChar==' '));
+
+
+
     //----Token Assignment----
-    if(Character.isDigit(currentChar))
+
+    Type type = null;
+    if(currentChar == ' ')
+      return getNextToken();
+    else if(Character.isDigit(currentChar))
       return new Token(Type.INTEGER, currentChar);
     else if(currentChar == '+')
-      return new Token(Type.PLUS, currentChar);
+        return new Token(Type.PLUS, currentChar);
+    else if(currentChar == '-')
+        return new Token(Type.MINUS, currentChar);
 
-    //Throw Error
-    error();
+    error("Invalid Character");
     return null;
   }
 
-  public void eat(Type tokenType){
-    if(this.currentToken.type == tokenType)
-      this.currentToken = getNextToken();
-    else
-      this.error();
+  public boolean check(Type tokenType){
+    System.out.println("Check: " + currentToken.type + "  vs  " + tokenType);
+    return currentToken.type == tokenType;
   }
+
+  public void validate(Type tokenType){
+    if(currentToken.type!=tokenType)
+      error("Validate");
+  }
+
+  public int grabInteger(){
+    validate(Type.INTEGER);
+    int output = 0;
+    do{
+      output = 10*output + Character.getNumericValue(currentToken.value);
+      this.currentToken = getNextToken();
+    }while(check(Type.INTEGER));
+    return output;
+  }
+
 
   public int interpret() {
     currentToken = getNextToken();
-    Token left = currentToken;
-    eat(Type.INTEGER);
+
+
+    int firstNum = grabInteger();
+
+
+
+
     Token op = currentToken;
-    eat(Type.PLUS);
-    Token right = currentToken;
-    eat(Type.INTEGER);
-    try{
-      return Character.getNumericValue(left.value) + Character.getNumericValue(right.value);
-    }catch(Exception e){
-      error();
-      return 0;
+    if(!check(Type.PLUS) && !check(Type.MINUS)){
+      error("Opperator");
+    }else{
+      this.currentToken = getNextToken();
     }
+
+
+    int lastNum = grabInteger();
+
+    //System.out.println("First: " + firstNum + "\tLast: " + lastNum);
+
+    return (op.type==Type.PLUS?firstNum + lastNum:firstNum-lastNum);
   }
 }

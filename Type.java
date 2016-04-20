@@ -1,3 +1,3 @@
 public enum Type{
-  INTEGER,PLUS,EOF
+  INTEGER,PLUS,MINUS,SPACE,EOF
 }
