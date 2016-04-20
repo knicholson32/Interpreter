@@ -78,22 +78,30 @@ public class Interpreter {
     else if(currentChar == '-')
         return new Token(Type.MINUS, currentChar);
 
+    // If none of the above return, return an error.
     error("Invalid Character");
     return null;
   }
 
+  // Checks if the curent Token matches the given type. Returns true on success
   public boolean check(Type tokenType){
     System.out.println("Check: " + currentToken.type + "  vs  " + tokenType);
     return currentToken.type == tokenType;
   }
 
+  // returns an error of the current Token does not match the given type
   public void validate(Type tokenType){
     if(currentToken.type!=tokenType)
       error("Validate");
   }
 
+  // Returns the integer value of the current token.
   public int grabInteger(){
+    // check that the current token is an integer
     validate(Type.INTEGER);
+
+    // Collect all of the integers in a sequence to make a number.
+    // EG. '1' '2' '3' ==> 123
     int output = 0;
     do{
       output = 10*output + Character.getNumericValue(currentToken.value);
@@ -102,12 +110,17 @@ public class Interpreter {
     return output;
   }
 
-
+  // Function that interprets the text (Argument)
+  // This can only work with one operator based on the following format:
+  //  "<int> <operator> <int>"
   public int interpret() {
+    // Get the next token within the text and set it to currentToken
     currentToken = getNextToken();
 
+    // find the first integer
     int firstNum = grabInteger();
 
+    // Deturmine the operator type
     Token op = currentToken;
     if(!check(Type.PLUS) && !check(Type.MINUS)){
       error("Opperator");
@@ -115,10 +128,12 @@ public class Interpreter {
       this.currentToken = getNextToken();
     }
 
+    // find the last integer
     int lastNum = grabInteger();
 
     //System.out.println("First: " + firstNum + "\tLast: " + lastNum);
 
+    // return the answer
     return (op.type==Type.PLUS?firstNum + lastNum:firstNum-lastNum);
   }
 }
