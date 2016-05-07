@@ -11,128 +11,75 @@
 // factor:  [(MINUS|PLUS) factor] | INTEGER | LPAR expr RPAR
 // --------------------------------------------------------------------- //
 
+
 public class Interpreter {
 
   // Main method that creates an Interpreter and populates it with args[0]
   public static void main(String[] args) {
+    if(args[0] == null || args[0].length() == 0){
+      System.out.println("No Input");
+      System.exit(1);
+    }
 
-
-    // Create new Interpreter and pass the first argument from the command line
-    Interpreter i = new Interpreter(new Lexer(args[0]));
-    // run the interpret method and print the result
-    System.out.println(args[0] + " = " + i.expr());
+    Interpreter i = new Interpreter(new Parser(new Lexer(args[0])));
+    System.out.println(args[0] + " = " + ((Num)i.interpret()).value);
   }
 
   // -----------------------------Methods Start----------------------------- //
-
-
-  private Lexer lexer;
-  private Token currentToken;
+  private Parser parser;
+  private AST tree;
 
   // Constructor for Interpreter which takes a string (the arguments)
-  public Interpreter(Lexer lexer){
-    this.lexer = lexer;
-    currentToken = lexer.getNextToken();
+  public Interpreter(Parser parser){
+    this.parser = parser;
+  }
+
+  public AST interpret(){
+    tree = parser.parse();
+    return visit(tree);
   }
 
   public void error(String msg){
-    System.out.println("Interpreter: Error parsing input: " + msg);
+    System.out.println("Interpreter: Error: " + msg);
     System.exit(1);
   }
 
-  private void eat(Type t){
-    if(currentToken.type == t){
-      currentToken = lexer.getNextToken();
-      //System.out.println(currentToken.type);
-    }else
-      error("Invalid Varification: Looking for " + t +" but found " + currentToken.type);
-  }
-
-  public int expr(){
-    int result = term();
-    //System.out.println(result);
-    while(currentToken.type == Type.PLUS || currentToken.type == Type.MINUS){
-      Token token = currentToken;
-      if(token.type == Type.PLUS){
-        eat(Type.PLUS);
-        result = result + term();
-      }else if(token.type == Type.MINUS){
-        eat(Type.MINUS);
-        result = result - term();
-      }else{
-        error("Unexpected Character");
-      }
-    }
-    return result;
-  }
-
-  public int term(){
-    //System.out.println(currentToken);
-    int result = exp();
-    while(currentToken.type == Type.MULT || currentToken.type == Type.DIVIDE || currentToken.type == Type.MOD){
-      Token token = currentToken;
-      //System.out.println(currentToken);
-      if(token.type == Type.MULT){
-        eat(Type.MULT);
-        //System.out.println(currentToken);
-        result = result * exp();
-      }else if(token.type == Type.DIVIDE){
-        eat(Type.DIVIDE);
-        //System.out.println(currentToken);
-        result = result / exp();
-      }else if(token.type == Type.MOD){
-        eat(Type.MOD);
-        //System.out.println(currentToken);
-        result = result % exp();
-      }else{
-        error("Unexpected Character");
-      }
-    }
-    return result;
-  }
-
-  public int exp(){
-    int result = factor();
-    //System.out.println(result);
-    while(currentToken.type == Type.EXP){
-      Token token = currentToken;
-      if(token.type == Type.EXP){
-        eat(Type.EXP);
-        result = (int)Math.pow(result,factor());
-      }else{
-        error("Unexpected Character");
-      }
-    }
-    return result;
-  }
-
-  private int factor(){
-    Token token = currentToken;
-
-    if(token.type == Type.MINUS){
-      currentToken = lexer.getNextToken();
-      return -factor();
-    }else if(token.type== Type.PLUS){
-      currentToken = lexer.getNextToken();
-      return factor();
-    }else if(token.type==Type.INTEGER){
-      eat(Type.INTEGER);
-      try{
-        return Integer.parseInt(token.value);
-      }catch(Exception e){
-        error("Integer Error");
-        return 0;
-      }
-    }else if(token.type == Type.LPAR){
-      eat(Type.LPAR);
-      int result = 0;
-      result = expr();
-      eat(Type.RPAR);
-      return result;
+  private AST visit(AST node){
+    if(node instanceof BinOP){
+      return visitBinOP((BinOP) node);
+    }else if(node instanceof Num){
+      return visitNum((Num) node);
     }else{
-      error("Factor Error");
-      return 0;
+      error("Visit was called on a node that is not listed.");
+      return null;
     }
+  }
+
+  public AST visitBinOP(BinOP node){
+    Type t = node.op.type;
+    switch(t){
+      case PLUS:
+        return new Num(((Num)visit(node.left)).value + ((Num)visit(node.right)).value);
+      case MINUS:
+        return new Num(((Num)visit(node.left)).value - ((Num)visit(node.right)).value);
+      case MULT:
+        return new Num(((Num)visit(node.left)).value * ((Num)visit(node.right)).value);
+      case DIVIDE:
+        return new Num(((Num)visit(node.left)).value / ((Num)visit(node.right)).value);
+      case MOD:
+        return new Num(((Num)visit(node.left)).value % ((Num)visit(node.right)).value);
+      case EXP:
+        return new Num((int)Math.pow(((Num)visit(node.left)).value,((Num)visit(node.right)).value));
+      //case SQRT:
+      //  return new Num((int)Math.sqrt((double)((Num)visit(node.left)).value,(double)((Num)visit(node.right)).value));
+      default:
+      error("An opperation as attempted with an opperand that is unknown: " + node.op.type);
+    }
+    return null;
+  }
+
+  public AST visitNum(Num n){
+    return n;
   }
 
 }

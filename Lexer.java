@@ -108,6 +108,21 @@ public class Lexer{
         advance();
         return new Token(Type.MOD, "%");
       }
+      if(currentChar == 's'){
+        advance();
+        if(currentChar == 'q'){
+          advance();
+          if(currentChar == 'r'){
+            advance();
+            if(currentChar =='t'){
+              advance();
+              if(currentChar == '('){
+                return new Token(Type.SQRT, "sqrt(");
+              }
+            }
+          }
+        }
+      }
       error("No Valid Tokens Found");
     }
     return new Token(Type.EOF, null);
