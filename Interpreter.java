@@ -21,7 +21,10 @@ public class Interpreter {
       System.exit(1);
     }
 
+    //Creates the Interpreter and gives it the inputs along with the Parser and Lexer
     Interpreter i = new Interpreter(new Parser(new Lexer(args[0])));
+
+    //Outputs the result
     System.out.println(args[0] + " = " + ((Num)i.interpret()).value);
   }
 
@@ -34,16 +37,19 @@ public class Interpreter {
     this.parser = parser;
   }
 
+  //Sets the tree head to the parser.parse() result
   public AST interpret(){
     tree = parser.parse();
     return visit(tree);
   }
 
+  //Called in the event of an error
   public void error(String msg){
     System.out.println("Interpreter: Error: " + msg);
     System.exit(1);
   }
 
+  //Visits a node. The node must be a BinOP or a Num at this point
   private AST visit(AST node){
     if(node instanceof BinOP){
       return visitBinOP((BinOP) node);
@@ -55,6 +61,7 @@ public class Interpreter {
     }
   }
 
+  //If a BinOP is encountered, this method is ran
   public AST visitBinOP(BinOP node){
     Type t = node.op.type;
     switch(t){
@@ -73,11 +80,12 @@ public class Interpreter {
       //case SQRT:
       //  return new Num((int)Math.sqrt((double)((Num)visit(node.left)).value,(double)((Num)visit(node.right)).value));
       default:
-      error("An opperation as attempted with an opperand that is unknown: " + node.op.type);
+        error("An opperation as attempted with an opperand that is unknown: " + node.op.type);
     }
     return null;
   }
 
+  //If a Num is encountered, this method is ran, which returns the number
   public AST visitNum(Num n){
     return n;
   }

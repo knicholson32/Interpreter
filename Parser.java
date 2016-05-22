@@ -2,16 +2,19 @@ public class Parser{
   private Lexer lexer;
   public Token currentToken;
 
+  //Initializes with a Lexer and asks the Lexer for the first token
   public Parser(Lexer lexer){
     this.lexer = lexer;
     currentToken = lexer.getNextToken();
   }
 
+  //Called if an error is encountered
   public void error(String msg){
     System.out.println("Parser: Error parsing input: " + msg);
     System.exit(1);
   }
 
+  //Eats the next type (and checks that the proper type is encountered at the same time)
   private void eat(Type t){
     if(currentToken.type == t){
       currentToken = lexer.getNextToken();
@@ -20,6 +23,9 @@ public class Parser{
       error("Invalid Varification: Looking for " + t +" but found " + currentToken.type);
   }
 
+  //----------------------------------------------------------------------------
+  //------------------Section that calculates the opperations-------------------
+  //----------------------------------------------------------------------------
   private AST factor(){
     Token token = currentToken;
     if(token.type == Type.MINUS){
