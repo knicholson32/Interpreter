@@ -1,0 +1,11 @@
+public class Var extends Literal {
+  public final Token token;
+  public final String value;
+
+  public Var(Token token){
+    this.token = token;
+    this.value = token.value;
+  }
+
+
+}

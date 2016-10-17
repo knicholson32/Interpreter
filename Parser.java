@@ -20,18 +20,103 @@ public class Parser{
       currentToken = lexer.getNextToken();
       //System.out.println(currentToken.type);
     }else
-      error("Invalid Varification: Looking for " + t +" but found " + currentToken.type);
+      error("Invalid Varification: Looking for " + t + " but found " + currentToken.type);
   }
+
+  private AST program(){
+    AST node = compoundStatment();
+    eat(Type.DOT);
+    return node;
+  }
+
+  private AST compoundStatment(){
+    eat(Type.BEGIN);
+    AST nodes[] = statementList();
+    eat(Type.END);
+
+    AST root = new Compound(nodes);
+    return root;
+  }
+
+  private AST[] statementList(){
+    AST node = statment();
+
+    AST results[] = {node};
+
+    while (currentToken.type == Type.SEMI){
+        eat(Type.SEMI);
+        results = append(results, statment());
+    }
+    if (currentToken.type == Type.ID){
+        error("Invalid Statment");
+    }
+
+    return results;
+  }
+
+  private AST statment(){
+    AST node;
+    if (currentToken.type == Type.BEGIN){
+      node = compoundStatment();
+    }else if(currentToken.type == Type.ID){
+      node = assignmentStatement();
+    }else{
+      node = empty();
+    }
+    return node;
+  }
+
+  private AST assignmentStatement(){
+    AST left = variable();
+    Token token = currentToken;
+    eat(Type.ASSIGN);
+    AST right = expr();
+    AST node = new Assign(left, token, right);
+    return node;
+  }
+
+  private AST variable(){
+    AST node = new Var(currentToken);
+    eat(Type.ID);
+    return node;
+  }
+
+  private AST empty(){
+    return new NoOp();
+  }
+
+  public AST[] append(AST[] arr, AST item){
+    //TODO: CHECK THIS
+    AST temp[] = new AST[arr.length+1];
+    for(int i = 0; i < arr.length; i++){
+        temp[i] = arr[i];
+    }
+    temp[temp.length-1]=item;
+    return temp;
+  }
+
+
+
 
   //----------------------------------------------------------------------------
   //------------------Section that calculates the opperations-------------------
   //----------------------------------------------------------------------------
   private AST factor(){
     Token token = currentToken;
+
+    //System.out.println("TOKEN TYPE: " + token.type);
+    //System.out.println("TOKEN VALUE: " + token.value);
+
     if(token.type == Type.MINUS){
       currentToken = lexer.getNextToken();
-      Num out = (Num)factor();
-      out.value=-out.value;
+      AST out = factor();
+      //System.out.println(out);
+      if(out instanceof Num){
+        ((Num)out).invert();
+      }
+      if(out instanceof Var){
+        ((Var)out).invert();
+      }
       return out;
     }else if(token.type== Type.PLUS){
       currentToken = lexer.getNextToken();
@@ -45,8 +130,9 @@ public class Parser{
       eat(Type.RPAR);
       return result;
     }else{
-      error("Factor Error");
-      return null;
+      //error("Factor Error: Valid token not found.");
+      //return null;
+      return variable();
     }
   }
 
@@ -84,6 +170,10 @@ public class Parser{
   }
 
   public AST parse(){
-    return expr();
+    AST node = program();
+    if (currentToken.type != Type.EOF){
+      error("EOF Expected");
+    }
+    return node;
   }
 }

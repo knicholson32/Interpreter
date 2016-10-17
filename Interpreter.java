@@ -10,7 +10,10 @@
 // exp:     factor(EXP factor)*
 // factor:  [(MINUS|PLUS) factor] | INTEGER | LPAR expr RPAR
 // --------------------------------------------------------------------- //
-
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 
 public class Interpreter {
 
@@ -21,26 +24,63 @@ public class Interpreter {
       System.exit(1);
     }
 
+    String input = "";
+    try{
+      input = readFile(args[0],Charset.defaultCharset());
+    }catch(IOException e){
+      System.out.println("IOException: ");
+      System.out.println(e);
+      System.exit(1);
+    }
+
+    //System.out.println(input);
+
+    //return;
+
     //Creates the Interpreter and gives it the inputs along with the Parser and Lexer
-    Interpreter i = new Interpreter(new Parser(new Lexer(args[0])));
+    Interpreter i = new Interpreter(new Parser(new Lexer(input)));
+
+    i.interpret();
+
+    i.print();
 
     //Outputs the result
-    System.out.println(args[0] + " = " + ((Num)i.interpret()).value);
+    //System.out.println(args[0] + " = " + ((Num)i.interpret()).value);
+  }
+
+  private static String readFile(String path, Charset encoding) throws IOException {
+    byte[] encoded = Files.readAllBytes(Paths.get(path));
+    return new String(encoded, encoding);
   }
 
   // -----------------------------Methods Start----------------------------- //
   private Parser parser;
   private AST tree;
+  private STable stable;
 
   // Constructor for Interpreter which takes a string (the arguments)
   public Interpreter(Parser parser){
     this.parser = parser;
+    stable = new STable();
   }
 
   //Sets the tree head to the parser.parse() result
-  public AST interpret(){
+  public void interpret(){
     tree = parser.parse();
-    return visit(tree);
+    visit(tree);
+  }
+
+  public void print(){
+    String out[] = stable.getAllNames();
+    AST outAST[] = stable.getAllAST();
+    //Print the ST output
+    System.out.println();
+    System.out.println("Var\tValue");
+    System.out.println("--------------");
+    for(int i = 0; i < out.length; i++){
+        System.out.print(out[i] + "\t");
+        System.out.println(((Num)(outAST[i])).value);
+    }
   }
 
   //Called in the event of an error
@@ -55,6 +95,16 @@ public class Interpreter {
       return visitBinOP((BinOP) node);
     }else if(node instanceof Num){
       return visitNum((Num) node);
+    }else if(node instanceof Compound){
+      visitCompound((Compound) node);
+      return null;
+    }else if(node instanceof Assign){
+      visitAssign((Assign) node);
+      return null;
+    }else if(node instanceof Var){
+      return visitVar((Var) node);
+    }else if(node instanceof NoOp){
+      return null;
     }else{
       error("Visit was called on a node that is not listed.");
       return null;
@@ -64,6 +114,14 @@ public class Interpreter {
   //If a BinOP is encountered, this method is ran
   public AST visitBinOP(BinOP node){
     Type t = node.op.type;
+
+    if(node.left instanceof Num){
+      //((Num)(node.left)).processInvert();
+    }
+    if(node.right instanceof Num){
+      //((Num)(node.right)).processInvert();
+    }
+
     switch(t){
       case PLUS:
         return new Num(((Num)visit(node.left)).value + ((Num)visit(node.right)).value);
@@ -89,5 +147,43 @@ public class Interpreter {
   public AST visitNum(Num n){
     return n;
   }
+
+  public void visitCompound(Compound node){
+    for (AST n : node.children){
+      visit(n);
+    }
+  }
+
+  public void visitNoOp(){
+    //Do nothing
+  }
+
+  public void visitAssign(Assign node){
+    String varName = ((Var)(node.left)).value;
+    stable.add(varName,visit(node.right));
+  }
+
+  public AST visitVar(Var node){
+    String name = node.value;
+    AST val = stable.get(name);
+    if(val == null){
+      error("The variable \""+name+"\" can not be found.");
+      return null;
+    }else{
+      //System.out.println("VISIT VAR: " + val);
+      //((Num)val).processInvert();
+      if(node.inverted == true){
+        Num n = ((Num)val).duplicate();
+        n.invert();
+        val = (AST)n;
+      }
+
+      //System.out.println(val);
+      return val;
+    }
+
+  }
+
+
 
 }
