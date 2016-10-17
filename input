@@ -1,11 +1,22 @@
-BEGIN
-  BEGIN
-    number := 2;
-    a := number;
-    b := 10 * a + 10 * number div 40;
-    c := a - - b;
-    _d := (a+2)*3; {This is a test of comments}
-    divel := _d;
-  END;
-  x := 11;
-END.
+PROGRAM Part10;
+VAR
+   number     : REAL;
+   a, b, c, x : INTEGER;
+   y          : REAL;
+
+BEGIN {Part10}
+   BEGIN
+      number := 2;
+      a := number;
+      b := 10 * a + 10 * number DIV 4;
+      c := a - - b
+   END;
+   x := 11;
+   y := 20 / 7 + 3.14;
+   { writeln('a = ', a); }
+   { writeln('b = ', b); }
+   { writeln('c = ', c); }
+   { writeln('number = ', number); }
+   { writeln('x = ', x); }
+   { writeln('y = ', y); }
+END.  {Part10}

@@ -79,7 +79,7 @@ public class Interpreter {
     System.out.println("--------------");
     for(int i = 0; i < out.length; i++){
         System.out.print(out[i] + "\t");
-        System.out.println(((Num)(outAST[i])).value);
+        System.out.println(((Num)(outAST[i])).value());
     }
   }
 
@@ -103,6 +103,17 @@ public class Interpreter {
       return null;
     }else if(node instanceof Var){
       return visitVar((Var) node);
+    }else if(node instanceof Program){
+      return visitProgram((Program) node);
+    }else if(node instanceof Block){
+      visitBlock((Block) node);
+      return null;
+    }else if(node instanceof VarDecl){
+      visitVarDecl((VarDecl) node);
+      return null;
+    }else if(node instanceof TypeAST){
+      visitType((TypeAST) node);
+      return null;
     }else if(node instanceof NoOp){
       return null;
     }else{
@@ -122,19 +133,47 @@ public class Interpreter {
       //((Num)(node.right)).processInvert();
     }
 
+    //System.out.println(((BinOP)node.left).op);
+    //System.out.println(node.op);
+
+    System.out.println(((Num)(visit(node.left))).type);
+
+    Num left = ((Num)(visit(node.left)));
+    Num right = ((Num)(visit(node.right)));
+
+    if(left.type == Type.INTEGER_CONST && right.type == Type.REAL_CONST)
+      error("Lossly conversion from float to int.");
+
     switch(t){
       case PLUS:
-        return new Num(((Num)visit(node.left)).value + ((Num)visit(node.right)).value);
+        if(left.type == Type.INTEGER_CONST)
+          return new Num(left.ivalue + right.ivalue);
+        else
+          return new Num(left.dvalue + right.dvalue);
       case MINUS:
-        return new Num(((Num)visit(node.left)).value - ((Num)visit(node.right)).value);
+        if(left.type == Type.INTEGER_CONST)
+          return new Num(left.ivalue - right.ivalue);
+        else
+          return new Num(left.dvalue - right.dvalue);
       case MULT:
-        return new Num(((Num)visit(node.left)).value * ((Num)visit(node.right)).value);
-      case DIVIDE:
-        return new Num(((Num)visit(node.left)).value / ((Num)visit(node.right)).value);
+        if(left.type == Type.INTEGER_CONST)
+          return new Num(left.ivalue * right.ivalue);
+        else
+          return new Num(left.dvalue * right.dvalue);
+      case INTEGER_DIV:
+        return new Num(left.ivalue / right.ivalue);
+      case FLOAT_DIV:
+        return new Num(left.dvalue / right.dvalue);
       case MOD:
-        return new Num(((Num)visit(node.left)).value % ((Num)visit(node.right)).value);
+        if(left.type == Type.INTEGER_CONST)
+          return new Num(left.ivalue % right.ivalue);
+        else
+          return new Num(left.dvalue % right.dvalue);
       case EXP:
-        return new Num((int)Math.pow(((Num)visit(node.left)).value,((Num)visit(node.right)).value));
+        if(left.type == Type.INTEGER_CONST)
+          return new Num((int)Math.pow(left.ivalue,right.ivalue));
+        else
+          return new Num(Math.pow(left.dvalue,right.dvalue));
       //case SQRT:
       //  return new Num((int)Math.sqrt((double)((Num)visit(node.left)).value,(double)((Num)visit(node.right)).value));
       default:
@@ -154,9 +193,7 @@ public class Interpreter {
     }
   }
 
-  public void visitNoOp(){
-    //Do nothing
-  }
+  public void visitNoOp(){}
 
   public void visitAssign(Assign node){
     String varName = ((Var)(node.left)).value;
@@ -183,6 +220,20 @@ public class Interpreter {
     }
 
   }
+
+  public AST visitProgram(Program p){
+    return visit(p.block);
+  }
+
+  public void visitBlock(Block b){
+    for(AST declaration : b.declarations)
+      visit(declaration);
+    visit(b.compoundStatement);
+  }
+
+  public void visitVarDecl(VarDecl v){}
+
+  public void visitType(TypeAST t){}
 
 
 

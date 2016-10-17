@@ -90,7 +90,7 @@ public class Lexer{
       case "var":
         return new Token(Type.VAR, "VAR");
       case "div":
-        return new Token(Type.DIVIDE, "DIV");
+        return new Token(Type.INTEGER_DIV, "DIV");
       case "integer":
         return new Token(Type.INTEGER, "INTEGER");
       case "real":
@@ -104,7 +104,7 @@ public class Lexer{
     }
   }
 
-  // Returns the integer value of the current token.
+  // Returns the numerical version of the current token.
   public Token number(){
     // Collect all of the integers in a sequence to make a number.
     // EG. '1' '2' '3' ==> 123
@@ -123,8 +123,7 @@ public class Lexer{
       }
       return new Token(Type.REAL_CONST, output);
     }else{
-      //return new Token(Type.INTEGER_CONST, output);
-      return new Token(Type.INTEGER, output);
+      return new Token(Type.INTEGER_CONST, output);
     }
   }
 

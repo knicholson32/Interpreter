@@ -24,9 +24,14 @@ public class Parser{
   }
 
   private AST program(){
-    AST node = compoundStatment();
+    eat(Type.PROGRAM);
+    Var var_node = (Var)variable();
+    String prog_name = var_node.value;
+    eat(Type.SEMI);
+    AST block_node = block();
+    AST program_node = new Program(prog_name, block_node);
     eat(Type.DOT);
-    return node;
+    return program_node;
   }
 
   private AST compoundStatment(){
@@ -85,13 +90,70 @@ public class Parser{
     return new NoOp();
   }
 
+  private AST block(){
+    return new Block(declarations(), compoundStatment());
+  }
+
+  private AST[] declarations(){
+    //declarations : VAR (variable_declaration SEMI)+ | empty
+    AST declarations[] = new AST[0];
+    if (currentToken.type == Type.VAR){
+        eat(Type.VAR);
+        while (currentToken.type == Type.ID){
+            append(declarations,variableDeclaration());
+            eat(Type.SEMI);
+        }
+    }
+    return declarations;
+  }
+
+  private AST[] variableDeclaration(){
+    AST var_nodes[] = {new Var(currentToken)};
+    eat(Type.ID);
+
+    while(currentToken.type == Type.COMMA){
+        eat(Type.COMMA);
+        append(var_nodes,new Var(currentToken));
+        eat(Type.ID);
+      }
+
+    eat(Type.COLON);
+
+    AST type_node = typeSpec();
+
+    AST var_declarations[] = new AST[0];
+    for(AST var_node : var_nodes){
+      append(var_declarations,new VarDecl(var_node, type_node));
+    }
+    return var_declarations;
+  }
+
+  private AST typeSpec(){
+    Token token = currentToken;
+    if (currentToken.type == Type.INTEGER)
+        eat(Type.INTEGER);
+    else
+        eat(Type.REAL);
+    return new TypeAST(token);
+  }
+
   public AST[] append(AST[] arr, AST item){
-    //TODO: CHECK THIS
     AST temp[] = new AST[arr.length+1];
     for(int i = 0; i < arr.length; i++){
         temp[i] = arr[i];
     }
     temp[temp.length-1]=item;
+    return temp;
+  }
+
+  public AST[] append(AST[] arr, AST[] items){
+    AST temp[] = new AST[arr.length+items.length];
+    for(int i = 0; i < arr.length; i++){
+        temp[i] = arr[i];
+    }
+    for(int i = arr.length; i < temp.length; i++){
+      temp[i]=items[i - arr.length];
+    }
     return temp;
   }
 
@@ -102,10 +164,15 @@ public class Parser{
   //------------------Section that calculates the opperations-------------------
   //----------------------------------------------------------------------------
   private AST factor(){
+    /*factor : PLUS factor
+              | MINUS factor
+              | INTEGER_CONST
+              | REAL_CONST
+              | LPAREN expr RPAREN
+              | variable            */
+
     Token token = currentToken;
 
-    //System.out.println("TOKEN TYPE: " + token.type);
-    //System.out.println("TOKEN VALUE: " + token.value);
 
     if(token.type == Type.MINUS){
       currentToken = lexer.getNextToken();
@@ -121,8 +188,11 @@ public class Parser{
     }else if(token.type== Type.PLUS){
       currentToken = lexer.getNextToken();
       return factor();
-    }else if(token.type==Type.INTEGER){
-      eat(Type.INTEGER);
+    }else if(token.type==Type.REAL_CONST){
+      eat(Type.REAL_CONST);
+      return new Num(token);
+    }else if(token.type==Type.INTEGER_CONST){
+      eat(Type.INTEGER_CONST);
       return new Num(token);
     }else if(token.type == Type.LPAR){
       eat(Type.LPAR);
@@ -148,9 +218,9 @@ public class Parser{
   }
 
   public AST term(){
-    //System.out.println(currentToken);
+    //term : factor ((MUL | INTEGER_DIV | FLOAT_DIV) factor)*
     AST node = exp();
-    while(currentToken.type == Type.MULT || currentToken.type == Type.DIVIDE || currentToken.type == Type.MOD){
+    while(currentToken.type == Type.MULT || currentToken.type == Type.INTEGER_DIV || currentToken.type == Type.MOD || currentToken.type == Type.FLOAT_DIV){
       Token token = currentToken;
       eat(currentToken.type);
       node = new BinOP(node, token, exp());
